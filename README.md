@@ -1,0 +1,2 @@
+# Mim
+Stock taker
