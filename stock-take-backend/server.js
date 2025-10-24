@@ -24,8 +24,8 @@ db.prepare(`
 
 // Scan a product (barcode input)
 app.post("/scan", (req, res) => {
-    const { barcode } = req.body;
-    if (!barcode) return res.status(400).json({ error: "Missing barcode" });
+  const { barcode, name, partNumber } = req.body;
+  if (!barcode) return res.status(400).json({ error: "Missing barcode" });
 
     const item = db.prepare("SELECT * FROM items WHERE barcode = ?").get(barcode);
 
@@ -33,8 +33,13 @@ app.post("/scan", (req, res) => {
         // Update existing
         db.prepare("UPDATE items SET qty = qty + 1 WHERE barcode = ?").run(barcode);
       } else {
-        // Insert new
-        db.prepare("INSERT INTO items (barcode, qty) VALUES (?, 1)").run(barcode);
+        // New item -> require name and part number
+        if (!name || !partNumber)
+          return res
+            .status(400)
+            .json({ error: "Missing name or part number for new item" });
+
+        db.prepare("INSERT INTO items (barcode, name, partNumber, qty) VALUES (?, ?, ?, 1)").run(barcode, name, partNumber);
       }
 
       const updated = db.prepare("SELECT * FROM items WHERE barcode = ?").get(barcode);
@@ -48,5 +53,5 @@ app.get("/items", (req, res) => {
   });
 
 // Start the server
-const PORT = 5173;
+const PORT = 4000;
 app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));

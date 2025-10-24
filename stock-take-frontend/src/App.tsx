@@ -1,35 +1,103 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from "react";
+import axios from "axios";
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+interface Item {
+  id: number;
+  barcode: string;
+  partNumber?: string;
+  name?: string;
+  qty: number;
 }
 
-export default App
+function App() {
+  const [barcode, setBarcode] = useState("");
+  const [items, setItems] = useState<Item[]>([]);
+
+  // Load items on start
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  const fetchItems = async () => {
+    const res = await axios.get<Item[]>("http://localhost:4000/items");
+    setItems(res.data);
+  };
+
+  const handleScan = async () => {
+    if (!barcode) return;
+  
+    try {
+      // Try adding the scan (it’ll increment if exists)
+      await axios.post("http://localhost:4000/scan", { barcode });
+    } catch (err: any) {
+      if (err.response && err.response.data.error?.includes("Missing name")) {
+        // New item → ask user for details
+        const name = prompt("New item detected. Enter product name:");
+        const partNumber = prompt("Enter part number (optional):") || "";
+        if (!name) return alert("Name is required for new items.");
+  
+        await axios.post("http://localhost:4000/scan", {
+          barcode,
+          name,
+          partNumber,
+        });
+      } else {
+        console.error(err);
+      }
+    }
+  
+    setBarcode("");
+    fetchItems();
+  };
+  
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Stock Take</h1>
+
+      {/* Scan Input */}
+      <div className="flex gap-2 mb-6">
+        <input
+          type="text"
+          value={barcode}
+          onChange={(e) => setBarcode(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleScan()}
+          placeholder="Scan or type barcode"
+          className="border p-2 flex-1 rounded"
+        />
+        <button
+          onClick={handleScan}
+          className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
+        >
+          Add
+        </button>
+      </div>
+
+      {/* Stock Table */}
+      <table className="w-full table-auto border-collapse border">
+        <thead>
+          <tr className="bg-gray-200">
+          <th className="border px-2 py-1">ID</th>
+          <th className="border px-2 py-1">Barcode</th>
+          <th className="border px-2 py-1">Part #</th>
+          <th className="border px-2 py-1">Name</th>
+          <th className="border px-2 py-1">Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id} className="text-center">
+              <td className="border px-2 py-1">{item.id}</td>
+              <td className="border px-2 py-1">{item.barcode}</td>
+              <td className="border px-2 py-1">{item.partNumber || "-"}</td>
+              <td className="border px-2 py-1">{item.name || "-"}</td>
+              <td className="border px-2 py-1">{item.qty}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export default App;
