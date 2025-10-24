@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import NewItemForm from "./components/newItemForm";
 
 interface Item {
   id: number;
@@ -9,9 +10,16 @@ interface Item {
   qty: number;
 }
 
+export interface NewItem {
+  barcode: string;
+  name?: string;
+  partNumber?: string;
+}
+
 function App() {
   const [barcode, setBarcode] = useState("");
   const [items, setItems] = useState<Item[]>([]);
+  const [newItem, setNewItem] = useState<NewItem | null>(null);
 
   // Load items on start
   useEffect(() => {
@@ -25,31 +33,23 @@ function App() {
 
   const handleScan = async () => {
     if (!barcode) return;
-  
+
     try {
       // Try adding the scan (it’ll increment if exists)
       await axios.post("http://localhost:4000/scan", { barcode });
+      setBarcode("");
+      fetchItems();
     } catch (err: any) {
-      if (err.response && err.response.data.error?.includes("Missing name")) {
-        // New item → ask user for details
-        const name = prompt("New item detected. Enter product name:");
-        const partNumber = prompt("Enter part number (optional):") || "";
-        if (!name) return alert("Name is required for new items.");
-  
-        await axios.post("http://localhost:4000/scan", {
-          barcode,
-          name,
-          partNumber,
-        });
+      if (err.response?.data.error?.includes("Missing name")) {
+        setNewItem({ barcode });
       } else {
         console.error(err);
       }
     }
-  
+
     setBarcode("");
     fetchItems();
   };
-  
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -73,15 +73,19 @@ function App() {
         </button>
       </div>
 
+      {newItem && (
+        <NewItemForm barcode={barcode} setNewItem={setNewItem} newItem={newItem} setBarcode={setBarcode} fetchItems={fetchItems} />
+      )}
+
       {/* Stock Table */}
       <table className="w-full table-auto border-collapse border">
         <thead>
           <tr className="bg-gray-200">
-          <th className="border px-2 py-1">ID</th>
-          <th className="border px-2 py-1">Barcode</th>
-          <th className="border px-2 py-1">Part #</th>
-          <th className="border px-2 py-1">Name</th>
-          <th className="border px-2 py-1">Qty</th>
+            <th className="border px-2 py-1">ID</th>
+            <th className="border px-2 py-1">Barcode</th>
+            <th className="border px-2 py-1">Part #</th>
+            <th className="border px-2 py-1">Name</th>
+            <th className="border px-2 py-1">Qty</th>
           </tr>
         </thead>
         <tbody>
