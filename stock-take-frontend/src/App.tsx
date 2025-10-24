@@ -86,6 +86,7 @@ function App() {
             <th className="border px-2 py-1">Part #</th>
             <th className="border px-2 py-1">Name</th>
             <th className="border px-2 py-1">Qty</th>
+            <th className="border px-2 py-1">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -96,6 +97,17 @@ function App() {
               <td className="border px-2 py-1">{item.partNumber || "-"}</td>
               <td className="border px-2 py-1">{item.name || "-"}</td>
               <td className="border px-2 py-1">{item.qty}</td>
+              <td className="border px-2 py-1"><button
+                className="bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600"
+                onClick={async () => {
+                  if (!confirm("Are you sure you want to delete this item?")) return;
+                  await axios.delete(`http://localhost:4000/items/${item.id}`);
+                  fetchItems();
+                }}
+                >
+                  Delete
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

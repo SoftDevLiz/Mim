@@ -52,6 +52,13 @@ app.get("/items", (req, res) => {
     res.json(items);
   });
 
+// Delete an item
+app.delete("/items/:id", (req, res) => {
+  const { id } = req.params;
+  db.prepare("DELETE FROM items WHERE id = ?").run(id);
+  res.json({success: true})
+})
+
 // Start the server
 const PORT = 4000;
 app.listen(PORT, () => console.log(`✅ Server running on http://localhost:${PORT}`));
