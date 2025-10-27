@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import NewItemForm from "./components/newItemForm";
+import NewItemForm from "./components/NewItemForm";
 
 interface Item {
   id: number;
@@ -35,20 +35,20 @@ function App() {
     if (!barcode) return;
 
     try {
-      // Try adding the scan (it’ll increment if exists)
-      await axios.post("http://localhost:4000/scan", { barcode });
-      setBarcode("");
-      fetchItems();
-    } catch (err: any) {
-      if (err.response?.data.error?.includes("Missing name")) {
-        setNewItem({ barcode });
+      // Check if item exists first
+      const itemExists = items.find(item => item.barcode === barcode);
+      if (itemExists) {
+        // Item exists, just increment
+        await axios.post("http://localhost:4000/scan", { barcode });
+        setBarcode("");
+        fetchItems();
       } else {
-        console.error(err);
+        // New item - show form
+        setNewItem({ barcode, name: "", partNumber: "" });
       }
+    } catch (err) {
+      console.error(err);
     }
-
-    setBarcode("");
-    fetchItems();
   };
 
   return (
@@ -81,7 +81,6 @@ function App() {
       <table className="w-full table-auto border-collapse border">
         <thead>
           <tr className="bg-gray-200">
-            <th className="border px-2 py-1">ID</th>
             <th className="border px-2 py-1">Barcode</th>
             <th className="border px-2 py-1">Part #</th>
             <th className="border px-2 py-1">Name</th>
@@ -92,7 +91,6 @@ function App() {
         <tbody>
           {items.map((item) => (
             <tr key={item.id} className="text-center">
-              <td className="border px-2 py-1">{item.id}</td>
               <td className="border px-2 py-1">{item.barcode}</td>
               <td className="border px-2 py-1">{item.partNumber || "-"}</td>
               <td className="border px-2 py-1">{item.name || "-"}</td>
