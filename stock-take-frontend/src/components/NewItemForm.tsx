@@ -28,7 +28,7 @@ const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: N
             className="border p-1 rounded mr-2"
         />
         <button
-            className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded mr-2"
+            className="bg-green-500 text-white px-3 py-1 rounded mr-2"
             onClick={async () => {
             await axios.post("http://localhost:4000/scan", newItem);
             setNewItem(null);
@@ -37,6 +37,17 @@ const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: N
             }}
         >
             Save
+        </button>
+        <button
+            className="bg-gray-300 px-3 py-1 rounded"
+            onClick={async () => {
+            await axios.post("http://localhost:4000/scan", {...newItem, name: null, partNumber: null});
+            setNewItem(null);
+            setBarcode("");
+            fetchItems();
+            }}
+        >
+            Skip
         </button>
         </div>
     );

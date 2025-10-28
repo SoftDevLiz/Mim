@@ -16,10 +16,9 @@ db.prepare(`
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       barcode TEXT UNIQUE,
       name TEXT,
-      partNumber TEXT,
       qty INTEGER DEFAULT 0
     )
-  `).run();``
+  `).run();
 
   // --- ROUTES ---
 
@@ -34,8 +33,13 @@ app.post("/scan", (req, res) => {
         // Update existing
         db.prepare("UPDATE items SET qty = qty + 1 WHERE barcode = ?").run(barcode);
       } else {
-        // Accept name and partNumber even if empty
-        db.prepare("INSERT INTO items (barcode, name, partNumber, qty) VALUES (?, ?, ?, 1)").run(barcode, name || null, partNumber || null);
+        // New item -> require name and part number
+        if (!name || !partNumber)
+          return res
+            .status(400)
+            .json({ error: "Missing name or part number for new item" });
+
+        db.prepare("INSERT INTO items (barcode, name, partNumber, qty) VALUES (?, ?, ?, 1)").run(barcode, name, partNumber);
       }
 
       const updated = db.prepare("SELECT * FROM items WHERE barcode = ?").get(barcode);
