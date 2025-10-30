@@ -33,12 +33,6 @@ app.post("/scan", (req, res) => {
         // Update existing
         db.prepare("UPDATE items SET qty = qty + 1 WHERE barcode = ?").run(barcode);
       } else {
-        // New item -> require name and part number
-        if (!name || !partNumber)
-          return res
-            .status(400)
-            .json({ error: "Missing name or part number for new item" });
-
         db.prepare("INSERT INTO items (barcode, name, partNumber, qty) VALUES (?, ?, ?, 1)").run(barcode, name, partNumber);
       }
 
