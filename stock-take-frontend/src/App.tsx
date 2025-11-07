@@ -108,7 +108,7 @@ function App() {
                   )}
               </td>
               <td className="border px-2 py-1">{item.qty}</td>
-              <td className="border px-2 py-1"><ActionButtons /></td>
+              <td className="border px-2 py-1"></td>
             </tr>
           ))}
         </tbody>

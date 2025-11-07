@@ -1,6 +1,5 @@
 ## TODO
-- Fix skip button
-- Make name + part number optional, and editable
+- Delete + edit buttons
 - Instant focus on input field, and when it's populated - instant add to DB
 - Implement reset DB button
 - Export to printable Excel Sheet
