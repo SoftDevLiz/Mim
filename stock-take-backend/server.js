@@ -17,7 +17,8 @@ db.prepare(`
       barcode TEXT UNIQUE,
       partNumber TEXT UNIQUE,
       name TEXT,
-      qty INTEGER DEFAULT 0
+      qty INTEGER DEFAULT 0,
+      loc TEXT
     )
   `).run();
 
@@ -25,7 +26,7 @@ db.prepare(`
 
 // Scan a product (barcode input)
 app.post("/scan", (req, res) => {
-  const { barcode, name, partNumber } = req.body;
+  const { barcode, name, partNumber, loc } = req.body;
   if (!barcode) return res.status(400).json({ error: "Missing barcode" });
 
     const item = db.prepare("SELECT * FROM items WHERE barcode = ?").get(barcode);
@@ -34,7 +35,7 @@ app.post("/scan", (req, res) => {
         // Update existing
         db.prepare("UPDATE items SET qty = qty + 1 WHERE barcode = ?").run(barcode);
       } else {
-        db.prepare("INSERT INTO items (barcode, name, partNumber, qty) VALUES (?, ?, ?, 1)").run(barcode, name, partNumber);
+        db.prepare("INSERT INTO items (barcode, name, partNumber, loc, qty) VALUES (?, ?, ?, ?, 1)").run(barcode, name, partNumber, loc);
       }
 
       const updated = db.prepare("SELECT * FROM items WHERE barcode = ?").get(barcode);

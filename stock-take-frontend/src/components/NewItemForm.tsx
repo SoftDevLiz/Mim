@@ -12,7 +12,7 @@ interface NewItemFormProps {
 const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: NewItemFormProps) => {
     return (
         <div className="p-4 mb-4 border rounded bg-gray-50">
-        <p>New item detected: {barcode}</p>
+        <p className="mb-2">New item detected: {barcode}</p>
         <input
             type="text"
             placeholder="Name (optional)"
@@ -27,11 +27,24 @@ const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: N
             onChange={(e) => setNewItem({ ...newItem, partNumber: e.target.value })}
             className="border p-1 rounded mr-2"
         />
+        <input
+            type="text"
+            placeholder="Location (optional)"
+            value={newItem.loc || ""}
+            onChange={(e) => setNewItem({ ...newItem, loc: e.target.value })}
+            className="border p-1 rounded mr-2"
+        />
         <button
             className="bg-green-500 text-white px-3 py-1 rounded mr-2"
             onClick={async () => {
-                await axios.post("http://localhost:4000/scan", newItem);
-                setNewItem({ barcode: "", name: "", partNumber: "" });
+                const payload = {
+                    barcode: newItem.barcode,
+                    ...(newItem.name && newItem.name.trim() !== "" ? { name: newItem.name.trim() } : {}),
+                    ...(newItem.partNumber && newItem.partNumber.trim() !== "" ? { partNumber: newItem.partNumber.trim() } : {}),
+                    ...(newItem.loc && newItem.loc.trim() !== "" ? { loc: newItem.loc.trim() } : {}),
+                };
+                await axios.post("http://localhost:4000/scan", payload);
+                setNewItem({ barcode: "", name: "", partNumber: "", loc: "" });
                 setBarcode("");
                 fetchItems();
             }}

@@ -9,12 +9,14 @@ export interface Item {
   partNumber?: string;
   name?: string;
   qty: number;
+  loc?: string;
 }
 
 export interface NewItem {
   barcode: string;
   name?: string;
   partNumber?: string;
+  loc?: string;
 }
 
 function App() {
@@ -87,6 +89,7 @@ function App() {
             <th className="border px-2 py-1">Part #</th>
             <th className="border px-2 py-1">Name</th>
             <th className="border px-2 py-1">Qty</th>
+            <th className="border px-2 py-1">Loc</th>
             <th className="border px-2 py-1">Actions</th>
           </tr>
         </thead>
@@ -109,6 +112,7 @@ function App() {
                   )}
               </td>
               <td className="border px-2 py-1">{item.qty}</td>
+              <td className="border px-2 py-1">{item.loc || "-"}</td>
               <td className="border px-2 py-1"><ActionButtons id={item.id} onDeleted={fetchItems} /></td>
             </tr>
           ))}
