@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import NewItemForm from "./components/NewItemForm";
+import ActionButtons from "./components/ActionButtons";
 
-interface Item {
+export interface Item {
   id: number;
   barcode: string;
   partNumber?: string;
@@ -108,7 +109,7 @@ function App() {
                   )}
               </td>
               <td className="border px-2 py-1">{item.qty}</td>
-              <td className="border px-2 py-1"></td>
+              <td className="border px-2 py-1"><ActionButtons id={item.id} onDeleted={fetchItems} /></td>
             </tr>
           ))}
         </tbody>

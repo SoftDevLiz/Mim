@@ -30,10 +30,10 @@ const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: N
         <button
             className="bg-green-500 text-white px-3 py-1 rounded mr-2"
             onClick={async () => {
-            await axios.post("http://localhost:4000/scan", newItem);
-            setNewItem(null);
-            setBarcode("");
-            fetchItems();
+                await axios.post("http://localhost:4000/scan", newItem);
+                setNewItem({ barcode: "", name: "", partNumber: "" });
+                setBarcode("");
+                fetchItems();
             }}
         >
             Save

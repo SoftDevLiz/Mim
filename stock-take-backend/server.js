@@ -15,6 +15,7 @@ db.prepare(`
     CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       barcode TEXT UNIQUE,
+      partNumber TEXT UNIQUE,
       name TEXT,
       qty INTEGER DEFAULT 0
     )
