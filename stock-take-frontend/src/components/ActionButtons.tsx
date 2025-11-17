@@ -11,14 +11,6 @@ const handleDelete = async (id) => {
     }
 };
 
-// const handleEdit = async () => {
-//     try {
-//         await
-//     } catch (e) {
-//         console.error("Edit failed", e)
-//     }
-// }
-
     return(
         <div className="flex">
             <button
@@ -27,7 +19,7 @@ const handleDelete = async (id) => {
             >
                 Delete
             </button>
-            <button 
+            <button
                 className="bg-blue-500 text-white px-3 py-1 rounded mr-2"
                 onClick={() => handleEdit()}
             >
