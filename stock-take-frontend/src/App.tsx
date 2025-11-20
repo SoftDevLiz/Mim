@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import type { FormEvent } from "react";
 import axios from "axios";
 import NewItemForm from "./components/NewItemForm";
-import ActionButtons from "./components/ActionButtons";
 
 export interface Item {
   id: number;
@@ -19,63 +19,131 @@ export interface NewItem {
   loc?: string;
 }
 
+const AUTO_SUBMIT_DELAY_MS = 750;
+
 function App() {
   const [barcode, setBarcode] = useState("");
   const [items, setItems] = useState<Item[]>([]);
   const [newItem, setNewItem] = useState<NewItem | null>(null);
-  const [editingId, setEditingId] = useState<number | null>(null);
+
+  const fetchItems = useCallback(async () => {
+    const res = await axios.get<Item[]>("http://localhost:4000/items");
+    setItems(res.data);
+  }, []);
 
   // Load items on start
   useEffect(() => {
     fetchItems();
-  }, []);
+  }, [fetchItems]);
 
-  const fetchItems = async () => {
-    const res = await axios.get<Item[]>("http://localhost:4000/items");
-    setItems(res.data);
-  };
-
-  const handleScan = async () => {
-    if (!barcode) return;
+  const handleScan = useCallback(async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    const trimmedBarcode = barcode.trim();
+    if (!trimmedBarcode) return;
 
     try {
       // Check if item exists first
-      const itemExists = items.find(item => item.barcode === barcode);
+      const itemExists = items.find((item) => item.barcode === trimmedBarcode);
       if (itemExists) {
         // Item exists, just increment
-        await axios.post("http://localhost:4000/scan", { barcode });
+        await axios.post("http://localhost:4000/scan", { barcode: trimmedBarcode });
         setBarcode("");
         fetchItems();
       } else {
         // New item - show form
-        setNewItem({ barcode, name: "", partNumber: "" });
+        setNewItem({ barcode: trimmedBarcode, name: "", partNumber: "" });
       }
     } catch (err) {
       console.error(err);
     }
+  }, [barcode, items, fetchItems]);
+
+  useEffect(() => {
+    if (newItem) return;
+    const trimmedBarcode = barcode.trim();
+    if (!trimmedBarcode) return;
+
+    const timeout = setTimeout(() => {
+      handleScan();
+    }, AUTO_SUBMIT_DELAY_MS);
+
+    return () => clearTimeout(timeout);
+  }, [barcode, newItem, handleScan]);
+
+  useEffect(() => {
+    if (barcode.trim()) return;
+    setNewItem(null);
+  }, [barcode]);
+
+  const handleDelete = async (id: number) => {
+    try {
+      axios.delete(`http://localhost:4000/items/${id}`)
+      fetchItems();
+    } catch (err) {
+      console.error("Error deleting items:", err)
+    }
+  }
+
+  const handleExport = () => {
+    if (!items.length) return;
+
+    const headers = ["Barcode", "Part #", "Name", "Qty", "Loc"];
+    const rows = items.map(({ barcode: itemBarcode, partNumber, name, qty, loc }) => ([
+      itemBarcode,
+      partNumber ?? "",
+      name ?? "",
+      qty.toString(),
+      loc ?? "",
+    ]));
+
+    const escapeCell = (value: string) => {
+      const needsQuotes = /[",\n]/.test(value);
+      const escapedValue = value.replace(/"/g, '""');
+      return needsQuotes ? `"${escapedValue}"` : escapedValue;
+    };
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map(escapeCell).join(","))
+      .join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `stock-take-${new Date().toISOString()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Stock Take</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">Stock Take</h1>
+        <button
+          onClick={handleExport}
+          className="bg-emerald-500 text-white px-4 py-2 rounded hover:bg-emerald-600 disabled:bg-gray-300 disabled:text-gray-500"
+          disabled={!items.length}
+        >
+          Export CSV
+        </button>
+      </div>
 
       {/* Scan Input */}
-      <div className="flex gap-2 mb-6">
+      <form className="flex gap-2 mb-6" onSubmit={handleScan}>
         <input
           type="text"
           value={barcode}
           onChange={(e) => setBarcode(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleScan()}
           placeholder="Scan or type barcode"
           className="border p-2 flex-1 rounded"
+          autoFocus
         />
-        <button
-          onClick={handleScan}
-          className="bg-blue-500 text-white px-4 rounded hover:bg-blue-600"
-        >
-          Add
+        <button type="submit" className="hidden" aria-hidden="true">
+          Submit
         </button>
-      </div>
+      </form>
 
       {newItem && (
         <NewItemForm barcode={barcode} setNewItem={setNewItem} newItem={newItem} setBarcode={setBarcode} fetchItems={fetchItems} />
@@ -97,23 +165,16 @@ function App() {
           {items.map((item) => (
             <tr key={item.id} className="text-center">
               <td className="border px-2 py-1">{item.barcode}</td>
-              {/* Conditional rendering to edit partnumber */}
-              <td className="border px-2 py-1">{editingId === item.id ? (
-                <input type="text" defaultValue={item.partNumber || ""} id={`part-${item.id}`}
-                  className="border p-1 w-full" /> ) : (
-                    item.partNumber || "-"
-                  )}
-              </td>
-              {/* Conditional rendering to edit name */}
-              <td className="border px-2 py-1">{editingId === item.id ? (
-                <input type="text" defaultValue={item.name || ""} id={`part-${item.id}`}
-                  className="border p-1 w-full" /> ) : (
-                    item.name || "-"
-                  )}
-              </td>
+              <td className="border px-2 py-1">{item.partNumber}</td>
+              <td className="border px-2 py-1">{item.name}</td>
               <td className="border px-2 py-1">{item.qty}</td>
               <td className="border px-2 py-1">{item.loc || "-"}</td>
-              <td className="border px-2 py-1"><ActionButtons id={item.id} onDeleted={fetchItems} /></td>
+              <td className="border px-2 py-1">
+                <button
+                  className="bg-red-500 text-white px-4 rounded hover:bg-red-600"
+                  onClick={() => handleDelete(item.id)}
+                  >Delete entire row</button>
+              </td>
             </tr>
           ))}
         </tbody>

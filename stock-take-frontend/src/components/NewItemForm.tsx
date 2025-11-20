@@ -3,7 +3,7 @@ import type { NewItem } from "../App";
 
 interface NewItemFormProps {
     barcode: string;
-    setNewItem: (newItem: NewItem) => void;
+    setNewItem: (newItem: NewItem | null) => void;
     newItem: NewItem;
     setBarcode: (barcode: string) => void;
     fetchItems: () => void;
@@ -44,7 +44,7 @@ const NewItemForm = ({ barcode, setNewItem, newItem, setBarcode, fetchItems }: N
                     ...(newItem.loc && newItem.loc.trim() !== "" ? { loc: newItem.loc.trim() } : {}),
                 };
                 await axios.post("http://localhost:4000/scan", payload);
-                setNewItem({ barcode: "", name: "", partNumber: "", loc: "" });
+                setNewItem(null);
                 setBarcode("");
                 fetchItems();
             }}
