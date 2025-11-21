@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import type { FormEvent } from "react";
 import axios from "axios";
-import NewItemForm from "./components/NewItemForm";
+// import NewItemForm from "./components/NewItemForm";
 
 export interface Item {
   id: number;
@@ -12,19 +12,11 @@ export interface Item {
   loc?: string;
 }
 
-export interface NewItem {
-  barcode: string;
-  name?: string;
-  partNumber?: string;
-  loc?: string;
-}
-
 const AUTO_SUBMIT_DELAY_MS = 750;
 
 function App() {
   const [barcode, setBarcode] = useState("");
   const [items, setItems] = useState<Item[]>([]);
-  const [newItem, setNewItem] = useState<NewItem | null>(null);
 
   const fetchItems = useCallback(async () => {
     const res = await axios.get<Item[]>("http://localhost:4000/items");
@@ -42,24 +34,15 @@ function App() {
     if (!trimmedBarcode) return;
 
     try {
-      // Check if item exists first
-      const itemExists = items.find((item) => item.barcode === trimmedBarcode);
-      if (itemExists) {
-        // Item exists, just increment
-        await axios.post("http://localhost:4000/scan", { barcode: trimmedBarcode });
-        setBarcode("");
-        fetchItems();
-      } else {
-        // New item - show form
-        setNewItem({ barcode: trimmedBarcode, name: "", partNumber: "" });
-      }
+      await axios.post("http://localhost:4000/scan", { barcode: trimmedBarcode });
+      setBarcode("");
+      fetchItems();
     } catch (err) {
       console.error(err);
     }
-  }, [barcode, items, fetchItems]);
+  }, [barcode, fetchItems]);
 
   useEffect(() => {
-    if (newItem) return;
     const trimmedBarcode = barcode.trim();
     if (!trimmedBarcode) return;
 
@@ -68,21 +51,16 @@ function App() {
     }, AUTO_SUBMIT_DELAY_MS);
 
     return () => clearTimeout(timeout);
-  }, [barcode, newItem, handleScan]);
-
-  useEffect(() => {
-    if (barcode.trim()) return;
-    setNewItem(null);
-  }, [barcode]);
+  }, [barcode, handleScan]);
 
   const handleDelete = async (id: number) => {
     try {
-      axios.delete(`http://localhost:4000/items/${id}`)
-      fetchItems();
+      await axios.delete(`http://localhost:4000/items/${id}`);
+      await fetchItems();
     } catch (err) {
-      console.error("Error deleting items:", err)
+      console.error("Error deleting items:", err);
     }
-  }
+  };
 
   const handleExport = () => {
     if (!items.length) return;
@@ -145,9 +123,9 @@ function App() {
         </button>
       </form>
 
-      {newItem && (
+      {/* {newItem && (
         <NewItemForm barcode={barcode} setNewItem={setNewItem} newItem={newItem} setBarcode={setBarcode} fetchItems={fetchItems} />
-      )}
+      )} */}
 
       {/* Stock Table */}
       <table className="w-full table-auto border-collapse border">
