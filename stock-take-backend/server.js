@@ -55,6 +55,12 @@ app.delete("/items/:id", (req, res) => {
   res.json({success: true})
 })
 
+// Delete all items (reset)
+app.delete("/items", (_req, res) => {
+  db.prepare("DELETE FROM items").run();
+  res.json({ success: true });
+});
+
 // Edit an item
 app.put("/items/:id", (req, res) => {
   const { id } = req.params;
@@ -99,7 +105,7 @@ app.put("/items/:id", (req, res) => {
   }
 
   // Checks if validUpdates contains anything
-  if (Object.key(validUpdates).length === 0) {
+  if (Object.keys(validUpdates).length === 0) {
     return res.status(400).json({ error: "No valid fields to update" });
   }
 

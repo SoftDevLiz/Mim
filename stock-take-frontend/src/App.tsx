@@ -12,7 +12,7 @@ export interface Item {
   loc?: string;
 }
 
-const AUTO_SUBMIT_DELAY_MS = 750;
+const AUTO_SUBMIT_DELAY_MS = 250;
 
 function App() {
   const [barcode, setBarcode] = useState("");
@@ -62,6 +62,62 @@ function App() {
     }
   };
 
+  const handleReset = async () => {
+    const confirmReset = window.confirm("This will delete all items. Continue?");
+    if (!confirmReset) return;
+
+    try {
+      await axios.delete("http://localhost:4000/items");
+      setBarcode("");
+      await fetchItems();
+    } catch (err) {
+      console.error("Error resetting items:", err);
+    }
+  };
+
+  const handleFieldChange = (
+    id: number,
+    field: "partNumber" | "name" | "qty" | "loc",
+    value: string
+  ) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+
+        if (field === "qty") {
+          const nextQty = Number(value);
+          if (Number.isNaN(nextQty) || nextQty < 0) return item;
+          return { ...item, qty: nextQty };
+        }
+
+        return { ...item, [field]: value };
+      })
+    );
+  };
+
+  const handleFieldSave = async (
+    id: number,
+    field: "partNumber" | "name" | "qty" | "loc",
+    value: string
+  ) => {
+    try {
+      const payload: Partial<Item> = {};
+
+      if (field === "qty") {
+        const parsed = Number(value);
+        if (Number.isNaN(parsed) || parsed < 0) return;
+        payload.qty = parsed;
+      } else {
+        payload[field] = value;
+      }
+
+      await axios.put(`http://localhost:4000/items/${id}`, payload);
+      await fetchItems();
+    } catch (err) {
+      console.error("Error updating item:", err);
+    }
+  };
+
   const handleExport = () => {
     if (!items.length) return;
 
@@ -106,6 +162,12 @@ function App() {
         >
           Export CSV
         </button>
+        <button
+          onClick={handleReset}
+          className="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800"
+        >
+          Reset All
+        </button>
       </div>
 
       {/* Scan Input */}
@@ -140,13 +202,47 @@ function App() {
           </tr>
         </thead>
         <tbody>
-          {items.map((item) => (
+          {[...items].reverse().map((item) => (
             <tr key={item.id} className="text-center">
               <td className="border px-2 py-1">{item.barcode}</td>
-              <td className="border px-2 py-1">{item.partNumber}</td>
-              <td className="border px-2 py-1">{item.name}</td>
-              <td className="border px-2 py-1">{item.qty}</td>
-              <td className="border px-2 py-1">{item.loc || "-"}</td>
+              <td className="border px-2 py-1">
+                <input
+                  className="w-full text-center border rounded px-1 py-1"
+                  value={item.partNumber ?? ""}
+                  onChange={(e) => handleFieldChange(item.id, "partNumber", e.target.value)}
+                  onBlur={(e) => handleFieldSave(item.id, "partNumber", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                />
+              </td>
+              <td className="border px-2 py-1">
+                <input
+                  className="w-full text-center border rounded px-1 py-1"
+                  value={item.name ?? ""}
+                  onChange={(e) => handleFieldChange(item.id, "name", e.target.value)}
+                  onBlur={(e) => handleFieldSave(item.id, "name", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                />
+              </td>
+              <td className="border px-2 py-1">
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full text-center border rounded px-1 py-1"
+                  value={item.qty}
+                  onChange={(e) => handleFieldChange(item.id, "qty", e.target.value)}
+                  onBlur={(e) => handleFieldSave(item.id, "qty", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                />
+              </td>
+              <td className="border px-2 py-1">
+                <input
+                  className="w-full text-center border rounded px-1 py-1"
+                  value={item.loc ?? ""}
+                  onChange={(e) => handleFieldChange(item.id, "loc", e.target.value)}
+                  onBlur={(e) => handleFieldSave(item.id, "loc", e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+                />
+              </td>
               <td className="border px-2 py-1">
                 <button
                   className="bg-red-500 text-white px-4 rounded hover:bg-red-600"
